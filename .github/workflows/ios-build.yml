@@ -1,0 +1,57 @@
+name: iOS build (simulador)
+
+# Compila o app num Mac da nuvem, sem assinatura e sem conta Apple — serve para
+# provar que o projeto abre e compila. Nao gera .ipa instalavel em iPhone.
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-14
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Dependencias JS
+        run: npm ci
+
+      - name: Sync Capacitor (roda o pod install)
+        run: npx cap sync ios
+
+      - name: Versoes
+        run: |
+          xcodebuild -version
+          pod --version
+
+      - name: Compilar para o simulador (sem assinatura)
+        working-directory: ios/App
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -workspace App.xcworkspace \
+            -scheme App \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            2>&1 | tee "$RUNNER_TEMP/xcodebuild.log"
+
+      - name: Resumo dos erros (se falhou)
+        if: failure()
+        run: |
+          echo "=== erros do compilador ==="
+          grep -E "error:|warning: .*(ShareImage|MainViewController|AppDelegate)" "$RUNNER_TEMP/xcodebuild.log" | sort -u | head -60 || true
+
+      - name: Guardar o log completo
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcodebuild-log
+          path: ${{ runner.temp }}/xcodebuild.log

@@ -1,0 +1,10 @@
+node_modules/
+ios/App/Pods/
+ios/App/build/
+ios/DerivedData/
+xcuserdata/
+*.xcuserstate
+*.ipa
+# GoogleService-Info.plist e chaves APNs NAO vao pro git
+ios/App/App/GoogleService-Info.plist
+*.p8

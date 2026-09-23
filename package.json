@@ -1,0 +1,22 @@
+{
+  "name": "rallyx-ios",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Casca iOS (Capacitor) do app do jogador RallyX — carrega https://rallyx.com.br/jogador dentro de um app nativo (WKWebView), no mesmo modelo do rallyx-android.",
+  "scripts": {
+    "sync": "npx cap sync ios",
+    "open": "npx cap open ios",
+    "assets": "npx capacitor-assets generate --ios"
+  },
+  "dependencies": {
+    "@capacitor/app": "^8.1.1",
+    "@capacitor/cli": "^8.5.1",
+    "@capacitor/core": "^8.5.1",
+    "@capacitor/ios": "^8.5.1",
+    "@capacitor/push-notifications": "^8.1.2",
+    "capacitor-native-biometric": "^4.2.2"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^3.0.5"
+  }
+}
