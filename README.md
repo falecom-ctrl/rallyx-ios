@@ -16,7 +16,7 @@ no app na hora, sem recompilar.
 ## O que você precisa no Mac
 
 1. macOS com **Xcode 15 ou mais novo** (App Store).
-2. **Node.js** (18+) e **CocoaPods**: `brew install node cocoapods`
+2. **Node.js** (22+) e **CocoaPods**: `brew install node cocoapods`
    (ou `sudo gem install cocoapods`).
 3. Uma conta Apple. Para rodar no simulador, qualquer Apple ID basta. Para rodar em iPhone
    real e para o push, é preciso o **Apple Developer Program** (US$ 99/ano).
