@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    runs-on: macos-14
+    runs-on: macos-15
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
@@ -38,6 +38,8 @@ jobs:
         run: |
           xcodebuild -version
           pod --version
+          echo "::notice title=Versoes::$(xcodebuild -version | tr '
+' ' ') | pod $(pod --version) | $(grep -A1 'FirebaseCoreInternal (' ios/App/Podfile.lock | head -1)"
 
       - name: Compilar para o simulador (sem assinatura)
         working-directory: ios/App
