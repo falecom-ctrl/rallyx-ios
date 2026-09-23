@@ -2,6 +2,8 @@ name: iOS build (simulador)
 
 # Compila o app num Mac da nuvem, sem assinatura e sem conta Apple — serve para
 # provar que o projeto abre e compila. Nao gera .ipa instalavel em iPhone.
+# Se um passo falhar, o final do log vai como "annotation" (visivel na tela do run
+# e pela API sem precisar de permissao de admin).
 on:
   push:
   workflow_dispatch:
@@ -22,7 +24,15 @@ jobs:
         run: npm ci
 
       - name: Sync Capacitor (roda o pod install)
-        run: npx cap sync ios
+        run: |
+          set +e
+          npx cap sync ios 2>&1 | tee "$RUNNER_TEMP/sync.log"
+          code=${PIPESTATUS[0]}
+          if [ "$code" -ne 0 ]; then
+            msg=$(tail -n 40 "$RUNNER_TEMP/sync.log" | tr -d '\r' | cut -c1-220 | head -c 3500 | sed ':a;N;$!ba;s/%/%25/g;s/\n/%0A/g')
+            echo "::error title=cap sync falhou::$msg"
+          fi
+          exit $code
 
       - name: Versoes
         run: |
@@ -32,7 +42,7 @@ jobs:
       - name: Compilar para o simulador (sem assinatura)
         working-directory: ios/App
         run: |
-          set -o pipefail
+          set +e
           xcodebuild build \
             -workspace App.xcworkspace \
             -scheme App \
@@ -41,17 +51,11 @@ jobs:
             -destination 'generic/platform=iOS Simulator' \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
-            2>&1 | tee "$RUNNER_TEMP/xcodebuild.log"
-
-      - name: Resumo dos erros (se falhou)
-        if: failure()
-        run: |
-          echo "=== erros do compilador ==="
-          grep -E "error:|warning: .*(ShareImage|MainViewController|AppDelegate)" "$RUNNER_TEMP/xcodebuild.log" | sort -u | head -60 || true
-
-      - name: Guardar o log completo
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: xcodebuild-log
-          path: ${{ runner.temp }}/xcodebuild.log
+            > "$RUNNER_TEMP/xcodebuild.log" 2>&1
+          code=$?
+          tail -n 30 "$RUNNER_TEMP/xcodebuild.log"
+          if [ "$code" -ne 0 ]; then
+            msg=$( (grep -E "error:|fatal error:|ld: " "$RUNNER_TEMP/xcodebuild.log" | sort -u | head -25; echo '--- fim do log ---'; tail -n 15 "$RUNNER_TEMP/xcodebuild.log") | tr -d '\r' | cut -c1-260 | head -c 3500 | sed ':a;N;$!ba;s/%/%25/g;s/\n/%0A/g')
+            echo "::error title=xcodebuild falhou::$msg"
+          fi
+          exit $code
