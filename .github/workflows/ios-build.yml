@@ -8,6 +8,9 @@ on:
   push:
   workflow_dispatch:
 
+permissions:
+  contents: write   # so para publicar as capturas de tela na branch ci-screenshots
+
 jobs:
   build:
     runs-on: macos-15
@@ -60,3 +63,52 @@ jobs:
             echo "::error title=xcodebuild falhou::$msg"
           fi
           exit $code
+
+      - name: Abrir no simulador e tirar capturas de tela
+        run: |
+          set +e
+          SHOTS="$RUNNER_TEMP/shots"; mkdir -p "$SHOTS"
+          UDID=$(xcrun simctl list devices available -j | python3 -c "
+          import sys,json
+          d=json.load(sys.stdin)['devices']
+          c=[x for k,v in d.items() if 'iOS' in k for x in v if x['name'].startswith('iPhone 16') and 'Pro' not in x['name'] and 'Plus' not in x['name'] and 'e' != x['name'][-1:]]
+          c=c or [x for k,v in d.items() if 'iOS' in k for x in v if x['name'].startswith('iPhone')]
+          print(c[0]['udid'])")
+          echo "simulador: $UDID"
+          xcrun simctl boot "$UDID"
+          xcrun simctl bootstatus "$UDID" -b
+          APP="$RUNNER_TEMP/dd/Build/Products/Debug-iphonesimulator/App.app"
+          xcrun simctl install "$UDID" "$APP"
+          xcrun simctl launch "$UDID" br.com.rallyx.jogador
+          sleep 8;  xcrun simctl io "$UDID" screenshot "$SHOTS/1-abrindo.png"
+          sleep 15; xcrun simctl io "$UDID" screenshot "$SHOTS/2-site-carregado.png"
+          sleep 10; xcrun simctl io "$UDID" screenshot "$SHOTS/3-depois-de-25s.png"
+          if xcrun simctl spawn "$UDID" launchctl list | grep -q rallyx; then
+            echo "::notice title=App::continua rodando apos 33s"
+          else
+            echo "::error title=App::o app NAO esta mais rodando (crash?)"
+          fi
+          xcrun simctl spawn "$UDID" log show --last 2m --style compact --predicate 'process == "App" AND (messageType == error OR messageType == fault)' 2>/dev/null | tail -20 > "$SHOTS/log-erros.txt"
+          echo "capturas:"; ls -la "$SHOTS"
+
+      - name: Guardar capturas (artifact)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: capturas-simulador
+          path: ${{ runner.temp }}/shots
+          if-no-files-found: ignore
+
+      - name: Publicar capturas na branch ci-screenshots
+        if: always()
+        run: |
+          set +e
+          [ -d "$RUNNER_TEMP/shots" ] || exit 0
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git checkout --orphan ci-screenshots
+          git rm -rf . -q
+          cp "$RUNNER_TEMP"/shots/* .
+          git add -A
+          git commit -q -m "capturas do simulador ($GITHUB_SHA)"
+          git push -f origin ci-screenshots
