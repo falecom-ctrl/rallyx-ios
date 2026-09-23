@@ -1,0 +1,34 @@
+{
+	"appId": "br.com.rallyx.jogador",
+	"appName": "RallyX",
+	"webDir": "www",
+	"appendUserAgent": "RallyXApp/1.0",
+	"server": {
+		"url": "https://rallyx.com.br/jogador",
+		"cleartext": false
+	},
+	"ios": {
+		"backgroundColor": "#070b1a",
+		"contentInset": "never",
+		"limitsNavigationsToAppBoundDomains": false
+	},
+	"plugins": {
+		"SplashScreen": {
+			"backgroundColor": "#070b1a",
+			"launchAutoHide": true,
+			"launchShowDuration": 800
+		},
+		"PushNotifications": {
+			"presentationOptions": [
+				"badge",
+				"sound",
+				"alert"
+			]
+		}
+	},
+	"packageClassList": [
+		"AppPlugin",
+		"PushNotificationsPlugin",
+		"NativeBiometric"
+	]
+}
