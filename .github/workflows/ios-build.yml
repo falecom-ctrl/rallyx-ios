@@ -38,8 +38,7 @@ jobs:
         run: |
           xcodebuild -version
           pod --version
-          echo "::notice title=Versoes::$(xcodebuild -version | tr '
-' ' ') | pod $(pod --version) | $(grep -A1 'FirebaseCoreInternal (' ios/App/Podfile.lock | head -1)"
+          echo "::notice title=Versoes::$(xcodebuild -version | paste -sd " " -) | pod $(pod --version)"
 
       - name: Compilar para o simulador (sem assinatura)
         working-directory: ios/App
